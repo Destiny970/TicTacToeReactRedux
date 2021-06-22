@@ -1,8 +1,17 @@
-import {createSlice} from '@reduxjs/toolkit';
+import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
 const initialState = {
     squares: Array(9).fill(null),
     xIsNext: true,
+    status: 'idle',
+    error: null,
 };
+
+const axios = require('axios');
+
+export const fetchData = createAsyncThunk('board/fetchData', async () => {
+  const response = await axios.get('http://apiurl');
+  return response;
+})
 
 export const boardSlice = createSlice({
     name: 'board',
@@ -17,6 +26,20 @@ export const boardSlice = createSlice({
             state.squares=squares;
             state.xIsNext=!state.xIsNext;
         },
+    },
+    extraReducers: {
+      [fetchData.pending]: (state, action) => {
+        state.status = 'loading';
+      },
+      [fetchData.fulfilled]: (state, action) => {
+        state.status = 'succeeded';
+        state.xIsNext = action.xIsNext;
+        state.squares = action.squares;
+      },
+      [fetchData.rejected]: (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message;
+      },
     },
 });
 

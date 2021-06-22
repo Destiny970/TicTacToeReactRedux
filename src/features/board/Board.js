@@ -1,5 +1,6 @@
 import Square from './Square'
 import Status from './Status'
+import fetchData from './boardSlice'
 
 export function Board() {
   return (
@@ -20,6 +21,9 @@ export function Board() {
           <Square squareNum={7} />
           <Square squareNum={8} />
         </div>
+        <button className="fetchButton" onClick={() => { dispatch(fetchData())} }>
+          Fetch from API
+        </button>
       </div>
     );
 }
