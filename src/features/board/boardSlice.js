@@ -1,4 +1,5 @@
 import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
+import { useDispatch } from 'react-redux';
 const initialState = {
     squares: Array(9).fill(null),
     xIsNext: true,
@@ -9,7 +10,14 @@ const initialState = {
 const axios = require('axios');
 
 export const fetchData = createAsyncThunk('board/fetchData', async () => {
-  const response = await axios.get('http://apiurl');
+  const response = await axios.get('https://0o8gqkw13j.execute-api.us-east-2.amazonaws.com/game');
+  return response.data.Item;
+})
+
+export const putData = createAsyncThunk('board/putData', async (_, thunkAPI) => {
+  const { board } = thunkAPI.getState();
+  console.log(board);
+  const response = await axios.put('https://0o8gqkw13j.execute-api.us-east-2.amazonaws.com/game', board);
   return response;
 })
 
@@ -32,11 +40,22 @@ export const boardSlice = createSlice({
         state.status = 'loading';
       },
       [fetchData.fulfilled]: (state, action) => {
+        console.log(action);
         state.status = 'succeeded';
-        state.xIsNext = action.xIsNext;
-        state.squares = action.squares;
+        state.xIsNext = action.payload.xIsNext;
+        state.squares = action.payload.squares;
       },
       [fetchData.rejected]: (state, action) => {
+        state.status = 'failed';
+        state.error = action.error.message;
+      },
+      [putData.pending]: (state, action) =>{
+        state.status = 'loading';
+      },
+      [putData.fulfilled]: (state, action) =>{
+        state.status = 'suceeded';
+      },
+      [putData.rejected]: (state, action) =>{
         state.status = 'failed';
         state.error = action.error.message;
       },

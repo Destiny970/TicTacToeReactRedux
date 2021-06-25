@@ -1,8 +1,10 @@
 import Square from './Square'
 import Status from './Status'
-import fetchData from './boardSlice'
+import { fetchData } from './boardSlice'
+import { useDispatch } from 'react-redux'
 
 export function Board() {
+  const dispatch = useDispatch();
   return (
       <div>
         <div className="status"><Status /></div>
@@ -21,7 +23,7 @@ export function Board() {
           <Square squareNum={7} />
           <Square squareNum={8} />
         </div>
-        <button className="fetchButton" onClick={() => { dispatch(fetchData())} }>
+        <button className="fetchButton" onClick={() => {console.log("Do the thing"); dispatch(fetchData())} }>
           Fetch from API
         </button>
       </div>
