@@ -1,0 +1,254 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Example template for an HTTP API that creates, updates, and deletes
+  items in DynamoDB
+
+  '
+Globals:
+  Function:
+    Timeout: 10
+  Api:
+    Cors:
+      AllowOrigin: '''*'''
+Resources:
+  DDBHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://daniellb-dev-bucket/b153e262d6766a6af859a691fab5d2eb
+      Handler: app.handler
+      Runtime: nodejs12.x
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ItemsTable
+      Events:
+        GetAnItem:
+          Type: HttpApi
+          Properties:
+            Path: /game
+            Method: GET
+        PutAnItem:
+          Type: HttpApi
+          Properties:
+            Path: /game
+            Method: PUT
+        Preflight:
+          Type: HttpApi
+          Properties:
+            Path: /game
+            Method: OPTIONS
+  ItemsTable:
+    Type: AWS::Serverless::SimpleTable
+    Properties:
+      PrimaryKey:
+        Name: id
+        Type: String
+      TableName: http-crud-tutorial-items
+  SimpleChatWebSocket:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: SimpleChatWebSocket
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      RouteKey: $connect
+      AuthorizationType: NONE
+      OperationName: ConnectRoute
+      Target:
+        Fn::Join:
+        - /
+        - - integrations
+          - Ref: ConnectInteg
+  ConnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      Description: Connect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnConnectFunction.Arn}/invocations
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      RouteKey: $disconnect
+      AuthorizationType: NONE
+      OperationName: DisconnectRoute
+      Target:
+        Fn::Join:
+        - /
+        - - integrations
+          - Ref: DisconnectInteg
+  DisconnectInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      Description: Disconnect Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${OnDisconnectFunction.Arn}/invocations
+  SendRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      RouteKey: $default
+      AuthorizationType: NONE
+      OperationName: SendRoute
+      Target:
+        Fn::Join:
+        - /
+        - - integrations
+          - Ref: SendInteg
+  SendInteg:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+      Description: Send Integration
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SendMessageFunction.Arn}/invocations
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+    - ConnectRoute
+    - SendRoute
+    - DisconnectRoute
+    Properties:
+      ApiId:
+        Ref: SimpleChatWebSocket
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: Prod
+      Description: Prod Stage
+      DeploymentId:
+        Ref: Deployment
+      ApiId:
+        Ref: SimpleChatWebSocket
+  OnConnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      Handler: app.onConnect
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: ItemsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ItemsTable
+  OnConnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - SimpleChatWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: OnConnectFunction
+      Principal: apigateway.amazonaws.com
+  OnDisconnectFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      Handler: app.onDisconnect
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: ItemsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ItemsTable
+  OnDisconnectPermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - SimpleChatWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: OnDisconnectFunction
+      Principal: apigateway.amazonaws.com
+  SendMessageFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      Handler: app.sendMessage
+      MemorySize: 256
+      Runtime: nodejs12.x
+      Environment:
+        Variables:
+          TABLE_NAME:
+            Ref: ItemsTable
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ItemsTable
+      - Statement:
+        - Effect: Allow
+          Action:
+          - execute-api:ManageConnections
+          Resource:
+          - Fn::Sub: arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${SimpleChatWebSocket}/*
+  SendMessagePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+    - SimpleChatWebSocket
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName:
+        Ref: SendMessageFunction
+      Principal: apigateway.amazonaws.com
+Outputs:
+  ApiEndpoint:
+    Description: The invoke URL for our HTTP API
+    Value:
+      Fn::Sub: https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com/game
+  Function:
+    Description: DynamoDB handler function ARN
+    Value:
+      Fn::GetAtt:
+      - DDBHandlerFunction
+      - Arn
+  OnConnectFunctionArn:
+    Description: OnConnect function ARN
+    Value:
+      Fn::GetAtt:
+      - OnConnectFunction
+      - Arn
+  OnDisconnectFunctionArn:
+    Description: OnDisconnect function ARN
+    Value:
+      Fn::GetAtt:
+      - OnDisconnectFunction
+      - Arn
+  SendMessageFunctionArn:
+    Description: SendMessage function ARN
+    Value:
+      Fn::GetAtt:
+      - SendMessageFunction
+      - Arn
+  WebSocketURI:
+    Description: The WSS Protocol URI to connect to
+    Value:
+      Fn::Join:
+      - ''
+      - - wss://
+        - Ref: SimpleChatWebSocket
+        - .execute-api.
+        - Ref: AWS::Region
+        - .amazonaws.com/
+        - Ref: Stage
