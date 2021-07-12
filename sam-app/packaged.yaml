@@ -137,7 +137,7 @@ Resources:
   OnConnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      CodeUri: s3://daniellb-dev-bucket/3d31c2836519ce497a2c09df9ac1a8d8
       Handler: app.onConnect
       MemorySize: 256
       Runtime: nodejs12.x
@@ -161,7 +161,7 @@ Resources:
   OnDisconnectFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      CodeUri: s3://daniellb-dev-bucket/3d31c2836519ce497a2c09df9ac1a8d8
       Handler: app.onDisconnect
       MemorySize: 256
       Runtime: nodejs12.x
@@ -185,7 +185,7 @@ Resources:
   SendMessageFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: s3://daniellb-dev-bucket/4de5c0571470a5d4e0eb336327b9c0d5
+      CodeUri: s3://daniellb-dev-bucket/3d31c2836519ce497a2c09df9ac1a8d8
       Handler: app.sendMessage
       MemorySize: 256
       Runtime: nodejs12.x

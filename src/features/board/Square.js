@@ -1,5 +1,6 @@
-import { squareData, handleClick, putData } from './boardSlice'
+import { squareData, handleClick } from './boardSlice'
 import { useSelector, useDispatch } from 'react-redux'
+import { putGame } from '../socket/socketSlice'
 
 export function Square(props) {
     const data = useSelector(squareData(props.squareNum))
@@ -7,7 +8,7 @@ export function Square(props) {
     return (
       <button className="square" onClick={() => {
         dispatch(handleClick(props.squareNum));
-        dispatch(putData());
+        dispatch(putGame());
       } }>
         {data}
       </button>

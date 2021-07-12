@@ -67,7 +67,7 @@ exports.sendMessage = async event => {
         const postData = connectionData.Items.map(async ({ id: connectionId }) => {
           try {
             if(connectionId!=="GAME#001") {
-              await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify(gameState) }).promise();
+              await apigwManagementApi.postToConnection({ ConnectionId: connectionId, Data: JSON.stringify({Item: gameState}) }).promise();
             } 
           } catch (e) {
             if (e.statusCode === 410) {

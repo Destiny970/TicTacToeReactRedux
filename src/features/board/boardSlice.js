@@ -1,23 +1,10 @@
-import {createAsyncThunk, createSlice} from '@reduxjs/toolkit';
+import { createSlice} from '@reduxjs/toolkit';
 const initialState = {
     squares: Array(9).fill(null),
     xIsNext: true,
     status: 'idle',
     error: null,
 };
-
-const axios = require('axios');
-
-export const fetchData = createAsyncThunk('board/fetchData', async () => {
-  const response = await axios.get('https://2okziya76b.execute-api.us-east-2.amazonaws.com/game');
-  return response.data.Item;
-})
-
-export const putData = createAsyncThunk('board/putData', async (_, thunkAPI) => {
-  const { board } = thunkAPI.getState();
-  const response = await axios.put('https://2okziya76b.execute-api.us-east-2.amazonaws.com//game', board);
-  return response;
-})
 
 export const boardSlice = createSlice({
     name: 'board',
@@ -32,35 +19,14 @@ export const boardSlice = createSlice({
             state.squares=squares;
             state.xIsNext=!state.xIsNext;
         },
-    },
-    extraReducers: {
-      [fetchData.pending]: (state, action) => {
-        state.status = 'loading';
-      },
-      [fetchData.fulfilled]: (state, action) => {
-        console.log(action);
-        state.status = 'succeeded';
-        state.xIsNext = action.payload.xIsNext;
-        state.squares = action.payload.squares;
-      },
-      [fetchData.rejected]: (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
-      },
-      [putData.pending]: (state, action) =>{
-        state.status = 'loading';
-      },
-      [putData.fulfilled]: (state, action) =>{
-        state.status = 'suceeded';
-      },
-      [putData.rejected]: (state, action) =>{
-        state.status = 'failed';
-        state.error = action.error.message;
-      },
+        updateData: (state, { payload })=>{
+          state.squares = payload.squares;
+          state.xIsNext = payload.xIsNext;
+        },
     },
 });
 
-export const {handleClick} = boardSlice.actions;
+export const {handleClick, updateData} = boardSlice.actions;
 
 export default boardSlice.reducer;
 
